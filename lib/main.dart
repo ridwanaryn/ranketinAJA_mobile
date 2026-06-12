@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/constants/theme.dart';
+import 'core/services/supabase_service.dart';
+import 'features/auth/presentation/pages/forgot_password_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/pages/register_page.dart';
-import 'features/auth/presentation/pages/forgot_password_page.dart';
-import 'features/court/presentation/pages/explore_page.dart';
-import 'features/court/presentation/pages/detail_page.dart';
+import 'features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'features/court/presentation/pages/confirmation_page.dart';
-import 'features/court/presentation/providers/app_provider.dart';
+import 'features/court/presentation/pages/detail_page.dart';
+import 'features/court/presentation/pages/explore_page.dart';
+import 'features/court/presentation/viewmodels/booking_viewmodel.dart';
+import 'features/court/presentation/viewmodels/court_viewmodel.dart';
 import 'features/owner/presentation/pages/owner_dashboard_page.dart';
+import 'features/owner/presentation/viewmodels/owner_viewmodel.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await SupabaseService.init();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AppProvider()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()..restoreSession()),
+        ChangeNotifierProvider(create: (_) => CourtViewModel()),
+        ChangeNotifierProvider(create: (_) => BookingViewModel()),
+        ChangeNotifierProvider(create: (_) => OwnerViewModel()),
       ],
       child: const MyApp(),
     ),

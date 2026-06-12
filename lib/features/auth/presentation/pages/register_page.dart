@@ -4,7 +4,7 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/typography.dart';
 import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/pill_button.dart';
-import '../../../court/presentation/providers/app_provider.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -34,33 +34,48 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  void _handleRegister() {
-    if (_formKey.currentState!.validate()) {
-      if (!_agreeToTerms) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must agree to the Terms and Conditions'),
-            backgroundColor: AppColors.error,
-          ),
-        );
-        return;
-      }
-      
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
-      appProvider.login(_emailController.text.trim(), _selectedRole);
-
+  Future<void> _handleRegister() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (!_agreeToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Account successfully created!'),
-          backgroundColor: AppColors.secondary,
+          content: Text('You must agree to the Terms and Conditions'),
+          backgroundColor: AppColors.error,
         ),
       );
+      return;
+    }
 
-      if (_selectedRole == 'owner') {
-        Navigator.pushReplacementNamed(context, '/owner_dashboard');
-      } else {
-        Navigator.pushReplacementNamed(context, '/explore');
-      }
+    final authVM = context.read<AuthViewModel>();
+    final ok = await authVM.register(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      password: _passwordController.text,
+      role: _selectedRole,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authVM.errorMessage ?? 'Registrasi gagal'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Account successfully created!'),
+        backgroundColor: AppColors.secondary,
+      ),
+    );
+
+    if (_selectedRole == 'owner') {
+      Navigator.pushReplacementNamed(context, '/owner_dashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/explore');
     }
   }
 
@@ -301,14 +316,20 @@ class _RegisterPageState extends State<RegisterPage> {
                   const SizedBox(height: 28),
 
                   // Submit Button
-                  PillButton(
-                    text: 'Complete Registration',
-                    width: double.infinity,
-                    icon: const Icon(
-                      Icons.arrow_forward,
-                      color: AppColors.onPrimary,
-                    ),
-                    onPressed: _handleRegister,
+                  Consumer<AuthViewModel>(
+                    builder: (context, vm, _) {
+                      return PillButton(
+                        text: vm.isLoading
+                            ? 'Registering...'
+                            : 'Complete Registration',
+                        width: double.infinity,
+                        icon: const Icon(
+                          Icons.arrow_forward,
+                          color: AppColors.onPrimary,
+                        ),
+                        onPressed: vm.isLoading ? () {} : _handleRegister,
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
 

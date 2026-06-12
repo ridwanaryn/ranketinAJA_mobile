@@ -6,7 +6,7 @@ import '../../../../core/widgets/custom_text_field.dart';
 import '../../../../core/widgets/glass_panel.dart';
 import '../../../../core/widgets/kinetic_skew.dart';
 import '../../../../core/widgets/pill_button.dart';
-import '../../../court/presentation/providers/app_provider.dart';
+import '../viewmodels/auth_viewmodel.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -29,16 +29,28 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
-      appProvider.login(_emailController.text.trim(), _selectedRole);
-
-      if (_selectedRole == 'owner') {
-        Navigator.pushReplacementNamed(context, '/owner_dashboard');
-      } else {
-        Navigator.pushReplacementNamed(context, '/explore');
-      }
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    final authVM = context.read<AuthViewModel>();
+    final ok = await authVM.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+    if (!mounted) return;
+    if (!ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authVM.errorMessage ?? 'Login gagal'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+    final role = authVM.currentUser!.role;
+    if (role == 'owner') {
+      Navigator.pushReplacementNamed(context, '/owner_dashboard');
+    } else {
+      Navigator.pushReplacementNamed(context, '/explore');
     }
   }
 
@@ -391,15 +403,22 @@ class _LoginPageState extends State<LoginPage> {
                               const SizedBox(height: 24),
 
                               // Action Button
-                              PillButton(
-                                text: 'Enter raketinAJA',
-                                width: double.infinity,
-                                icon: const Icon(
-                                  Icons.arrow_forward_ios,
-                                  color: AppColors.onPrimary,
-                                  size: 16,
-                                ),
-                                onPressed: _handleLogin,
+                              Consumer<AuthViewModel>(
+                                builder: (context, vm, _) {
+                                  return PillButton(
+                                    text: vm.isLoading
+                                        ? 'Authenticating...'
+                                        : 'Enter raketinAJA',
+                                    width: double.infinity,
+                                    icon: const Icon(
+                                      Icons.arrow_forward_ios,
+                                      color: AppColors.onPrimary,
+                                      size: 16,
+                                    ),
+                                    onPressed:
+                                        vm.isLoading ? () {} : _handleLogin,
+                                  );
+                                },
                               ),
                               const SizedBox(height: 24),
 
