@@ -4,15 +4,52 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/typography.dart';
 import '../../../../core/widgets/kinetic_skew.dart';
 import '../../../../core/widgets/pill_button.dart';
-import '../providers/app_provider.dart';
+import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../viewmodels/booking_viewmodel.dart';
+import '../viewmodels/court_viewmodel.dart';
 
-class ConfirmationPage extends StatelessWidget {
+class ConfirmationPage extends StatefulWidget {
   const ConfirmationPage({super.key});
 
-  void _handleConfirm(BuildContext context, AppProvider provider) {
-    provider.confirmBooking();
+  @override
+  State<ConfirmationPage> createState() => _ConfirmationPageState();
+}
 
-    // Show booking confirmed overlay dialog
+class _ConfirmationPageState extends State<ConfirmationPage> {
+  bool _isSubmitting = false;
+
+  Future<void> _handleConfirm() async {
+    final courtVM = context.read<CourtViewModel>();
+    final bookingVM = context.read<BookingViewModel>();
+    final authVM = context.read<AuthViewModel>();
+
+    final court = courtVM.selectedCourt;
+    final slot = courtVM.selectedTimeSlot;
+    final user = authVM.currentUser;
+
+    if (court == null || slot == null || user == null) return;
+
+    setState(() => _isSubmitting = true);
+    final created = await bookingVM.confirmBooking(
+      userId: user.id,
+      fieldId: court.id,
+      date: courtVM.selectedDate,
+      startHHMM: slot,
+      totalPrice: courtVM.calculateTotalDue(),
+    );
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (created == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(bookingVM.error ?? 'Gagal membuat booking'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -38,7 +75,8 @@ class ConfirmationPage extends StatelessWidget {
             const SizedBox(height: 24),
             Text(
               'Booking Confirmed!',
-              style: AppTypography.headlineMedium.copyWith(fontWeight: FontWeight.w900),
+              style: AppTypography.headlineMedium
+                  .copyWith(fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 8),
             Text(
@@ -51,8 +89,9 @@ class ConfirmationPage extends StatelessWidget {
               text: 'BACK TO EXPLORE',
               width: double.infinity,
               onPressed: () {
-                Navigator.pop(context); // close dialog
-                Navigator.pushNamedAndRemoveUntil(context, '/explore', (route) => false);
+                Navigator.pop(context);
+                Navigator.pushNamedAndRemoveUntil(
+                    context, '/explore', (route) => false);
               },
             ),
             const SizedBox(height: 8),
@@ -62,62 +101,29 @@ class ConfirmationPage extends StatelessWidget {
     );
   }
 
-  void _showFriendsDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Invite Friends', style: AppTypography.titleLarge),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Share this booking and split the bill with your teammates!',
-              style: AppTypography.bodyMedium,
-            ),
-            const SizedBox(height: 16),
-            const TextField(
-              decoration: InputDecoration(
-                hintText: 'teammate@email.com',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Invites sent successfully!'),
-                  backgroundColor: AppColors.secondary,
-                ),
-              );
-            },
-            child: const Text('Send Invites'),
-          ),
-        ],
-      ),
-    );
+  String _formatSlot(String hhmm) {
+    final parts = hhmm.split(':');
+    final h = int.parse(parts[0]);
+    final m = parts[1];
+    final period = h >= 12 ? 'PM' : 'AM';
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    return '$h12:$m $period';
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final court = provider.selectedCourt;
+    final courtVM = context.watch<CourtViewModel>();
+    final court = courtVM.selectedCourt;
 
-    if (court == null || provider.selectedTimeSlot == null) {
+    if (court == null || courtVM.selectedTimeSlot == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Confirmation')),
         body: const Center(child: Text('Invalid booking context')),
       );
     }
 
-    final dateString = '${provider.selectedDate.day}/${provider.selectedDate.month}/${provider.selectedDate.year}';
+    final dateString =
+        '${courtVM.selectedDate.day}/${courtVM.selectedDate.month}/${courtVM.selectedDate.year}';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -130,7 +136,8 @@ class ConfirmationPage extends StatelessWidget {
         ),
         title: Text(
           'Review Booking',
-          style: AppTypography.titleLarge.copyWith(color: AppColors.onBackground),
+          style:
+              AppTypography.titleLarge.copyWith(color: AppColors.onBackground),
         ),
       ),
       body: SingleChildScrollView(
@@ -138,7 +145,6 @@ class ConfirmationPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Success Warning/Alert Area
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -182,8 +188,6 @@ class ConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Main Title
             Text(
               'Summary Details',
               style: AppTypography.labelSmall.copyWith(
@@ -196,7 +200,8 @@ class ConfirmationPage extends StatelessWidget {
             Text.rich(
               TextSpan(
                 text: 'Review Your\n',
-                style: AppTypography.displaySmall.copyWith(fontWeight: FontWeight.w900, height: 1.1),
+                style: AppTypography.displaySmall
+                    .copyWith(fontWeight: FontWeight.w900, height: 1.1),
                 children: [
                   TextSpan(
                     text: 'Match Day',
@@ -209,9 +214,6 @@ class ConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Bento Grid Details
-            // Field Card Image Overlay
             KineticTilt(
               angleDegrees: -1.0,
               child: Container(
@@ -221,7 +223,7 @@ class ConfirmationPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: AppColors.ambientGlow,
                   image: DecorationImage(
-                    image: NetworkImage(court.imageUrl),
+                    image: NetworkImage(court.displayImageUrl),
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -229,7 +231,10 @@ class ConfirmationPage extends StatelessWidget {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
                     gradient: LinearGradient(
-                      colors: [Colors.black.withOpacity(0.8), Colors.transparent],
+                      colors: [
+                        Colors.black.withOpacity(0.8),
+                        Colors.transparent
+                      ],
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                     ),
@@ -242,16 +247,22 @@ class ConfirmationPage extends StatelessWidget {
                     children: [
                       Text(
                         court.name,
-                        style: AppTypography.titleLarge.copyWith(color: Colors.white, fontSize: 22),
+                        style: AppTypography.titleLarge
+                            .copyWith(color: Colors.white, fontSize: 22),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.location_on, color: Colors.white70, size: 14),
+                          const Icon(Icons.location_on,
+                              color: Colors.white70, size: 14),
                           const SizedBox(width: 4),
-                          Text(
-                            court.locationName,
-                            style: AppTypography.bodySmall.copyWith(color: Colors.white70),
+                          Expanded(
+                            child: Text(
+                              court.location,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodySmall
+                                  .copyWith(color: Colors.white70),
+                            ),
                           ),
                         ],
                       ),
@@ -261,90 +272,20 @@ class ConfirmationPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-
-            // Date & Time Cards Row
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    height: 110,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.onSurface.withOpacity(0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Icon(Icons.calendar_today, color: AppColors.primary, size: 24),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'DATE SELECTED',
-                              style: AppTypography.labelSmall.copyWith(fontSize: 8),
-                            ),
-                            Text(
-                              dateString,
-                              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _infoCard(
+                      Icons.calendar_today, 'DATE SELECTED', dateString),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Container(
-                    height: 110,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.onSurface.withOpacity(0.02),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Icon(Icons.schedule, color: AppColors.primary, size: 24),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'TIME SLOT',
-                              style: AppTypography.labelSmall.copyWith(fontSize: 8),
-                            ),
-                            Text(
-                              provider.selectedTimeSlot!,
-                              style: AppTypography.titleMedium.copyWith(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _infoCard(Icons.schedule, 'TIME SLOT',
+                      _formatSlot(courtVM.selectedTimeSlot!)),
                 ),
               ],
             ),
             const SizedBox(height: 24),
-
-            // Payment Summary Column
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -360,28 +301,25 @@ class ConfirmationPage extends StatelessWidget {
                     style: AppTypography.titleLarge.copyWith(fontSize: 18),
                   ),
                   const SizedBox(height: 16),
-                  
-                  // Subtotal
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('Court Rental (2 hrs)', style: AppTypography.bodyMedium),
-                      Text('\$${provider.getSubtotal().toStringAsFixed(2)}', style: AppTypography.titleMedium),
+                      Text('Court Rental (2 hrs)',
+                          style: AppTypography.bodyMedium),
+                      Text('\$${courtVM.getSubtotal().toStringAsFixed(2)}',
+                          style: AppTypography.titleMedium),
                     ],
                   ),
                   const SizedBox(height: 8),
-
-                  // Service fee
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Service Fee', style: AppTypography.bodyMedium),
-                      Text('\$${provider.getServiceFee().toStringAsFixed(2)}', style: AppTypography.titleMedium),
+                      Text('\$${courtVM.getServiceFee().toStringAsFixed(2)}',
+                          style: AppTypography.titleMedium),
                     ],
                   ),
                   const SizedBox(height: 8),
-
-                  // Discount
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -394,7 +332,7 @@ class ConfirmationPage extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '-\$${provider.getDiscount().toStringAsFixed(2)}',
+                        '-\$${courtVM.getDiscount().toStringAsFixed(2)}',
                         style: AppTypography.titleMedium.copyWith(
                           color: AppColors.tertiary,
                           fontWeight: FontWeight.bold,
@@ -405,8 +343,6 @@ class ConfirmationPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Divider(color: AppColors.outlineVariant),
                   const SizedBox(height: 12),
-
-                  // Total Due
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -414,10 +350,11 @@ class ConfirmationPage extends StatelessWidget {
                     children: [
                       Text(
                         'Total Due',
-                        style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.bold),
+                        style: AppTypography.titleLarge
+                            .copyWith(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '\$${provider.calculateTotalDue().toStringAsFixed(2)}',
+                        '\$${courtVM.calculateTotalDue().toStringAsFixed(2)}',
                         style: AppTypography.displaySmall.copyWith(
                           color: AppColors.primary,
                           fontWeight: FontWeight.w900,
@@ -426,17 +363,17 @@ class ConfirmationPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  // Security Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceVariant.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.security, color: AppColors.primary, size: 18),
+                        const Icon(Icons.security,
+                            color: AppColors.primary, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -451,17 +388,13 @@ class ConfirmationPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Confirm button
                   PillButton(
-                    text: 'Confirm Booking',
+                    text: _isSubmitting ? 'Processing...' : 'Confirm Booking',
                     width: double.infinity,
                     icon: const Icon(Icons.rocket_launch, color: Colors.white),
-                    onPressed: () => _handleConfirm(context, provider),
+                    onPressed: _isSubmitting ? () {} : _handleConfirm,
                   ),
                   const SizedBox(height: 12),
-
-                  // Cancel/Change Field button
                   SizedBox(
                     width: double.infinity,
                     height: 52,
@@ -469,57 +402,50 @@ class ConfirmationPage extends StatelessWidget {
                       onPressed: () => Navigator.pop(context),
                       child: Text(
                         'Cancel & Change Field',
-                        style: AppTypography.labelLarge.copyWith(color: AppColors.onSurface),
+                        style: AppTypography.labelLarge
+                            .copyWith(color: AppColors.onSurface),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // Split the bill / Invite Friends Promo card
-            GestureDetector(
-              onTap: () => _showFriendsDialog(context),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.secondaryFixed,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Split the bill?',
-                          style: AppTypography.titleLarge.copyWith(
-                            color: AppColors.onSecondaryFixed,
-                            fontSize: 18,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Invite 4 teammates now',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.onSecondaryFixed.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Icon(
-                      Icons.group,
-                      color: AppColors.onSecondaryFixed,
-                      size: 36,
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _infoCard(IconData icon, String label, String value) {
+    return Container(
+      height: 110,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.onSurface.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Icon(icon, color: AppColors.primary, size: 24),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: AppTypography.labelSmall.copyWith(fontSize: 8)),
+              Text(value,
+                  style: AppTypography.titleMedium
+                      .copyWith(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ],
       ),
     );
   }

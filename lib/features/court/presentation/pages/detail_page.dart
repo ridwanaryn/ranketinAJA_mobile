@@ -4,7 +4,8 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/typography.dart';
 import '../../../../core/widgets/kinetic_skew.dart';
 import '../../../../core/widgets/pill_button.dart';
-import '../providers/app_provider.dart';
+import '../viewmodels/booking_viewmodel.dart';
+import '../viewmodels/court_viewmodel.dart';
 
 class DetailPage extends StatefulWidget {
   const DetailPage({super.key});
@@ -15,18 +16,43 @@ class DetailPage extends StatefulWidget {
 
 class _DetailPageState extends State<DetailPage> {
   final List<String> _slots = [
-    '09:00 AM',
-    '10:30 AM',
-    '01:00 PM',
-    '02:30 PM',
-    '04:00 PM',
-    '05:30 PM',
+    '09:00',
+    '10:30',
+    '13:00',
+    '14:30',
+    '16:00',
+    '17:30',
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshSlots());
+  }
+
+  void _refreshSlots() {
+    final courtVM = context.read<CourtViewModel>();
+    final bookingVM = context.read<BookingViewModel>();
+    final court = courtVM.selectedCourt;
+    if (court != null) {
+      bookingVM.loadBookedSlots(court.id, courtVM.selectedDate);
+    }
+  }
+
+  String _formatSlot(String hhmm) {
+    final parts = hhmm.split(':');
+    final h = int.parse(parts[0]);
+    final m = parts[1];
+    final period = h >= 12 ? 'PM' : 'AM';
+    final h12 = h % 12 == 0 ? 12 : h % 12;
+    return '$h12:$m $period';
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final court = provider.selectedCourt;
+    final courtVM = context.watch<CourtViewModel>();
+    final bookingVM = context.watch<BookingViewModel>();
+    final court = courtVM.selectedCourt;
 
     if (court == null) {
       return Scaffold(
@@ -54,7 +80,6 @@ class _DetailPageState extends State<DetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Gallery Header (Kinetic tilted image gallery)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
@@ -68,25 +93,27 @@ class _DetailPageState extends State<DetailPage> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: AppColors.ambientGlow,
                         image: DecorationImage(
-                          image: NetworkImage(court.imageUrl),
+                          image: NetworkImage(court.displayImageUrl),
                           fit: BoxFit.cover,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Small sub-gallery images
                   Row(
                     children: [
                       Expanded(
                         child: Container(
                           height: 70,
                           decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(8),
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuByzy3-iT6TwiT6zWiD4geYHgzIIoNzo59-WFU8_fY-Vp_fy42e7llAvUZo5UPeCKfzeLB2QVbwO5sb0H_NzVaFNU-hx637P23VXbUu7so3tLeDa8RaJtPZwWhoAvlzaDgFwxb4VvMlg6s0WYvTmzDP09fDa_rtTPPhrn1vgtZYfj-e8RNjI2a5i7RPS8K_fpIa-rfE-GxNON_QkAGdzdopvUK4rt54aoN-HA3SalGxSQ6jR6l1-C_EwL2qLnP1MTAebRSv0X25Ew'),
-                              fit: BoxFit.cover,
+                          ),
+                          child: Center(
+                            child: Text(
+                              court.displaySport,
+                              style: AppTypography.labelMedium
+                                  .copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -96,11 +123,14 @@ class _DetailPageState extends State<DetailPage> {
                         child: Container(
                           height: 70,
                           decoration: BoxDecoration(
+                            color: AppColors.surfaceContainerLow,
                             borderRadius: BorderRadius.circular(8),
-                            image: const DecorationImage(
-                              image: NetworkImage(
-                                  'https://lh3.googleusercontent.com/aida-public/AB6AXuDlAkVsPehpIvJ4a8PJyWaXcFoU6CaPCplfjqWiHsGukURtnrdQuf2ioctqzdIAiTWBP5WKQYb8S-Yn7eOMOoxHn755uw1Gx8Nz0R7rTqAwtbJexm425exLsy3LzI32Mnhsq7wD7na-Fg1cm6bPFyqcEntu6YJZGtfxL2IkpV0-aR7gVNfMBfpRKZQhEmUNQT-G91_FO73L-y_HseSHEXBU0F8OFjxAfeVCqbKymftV7C0n9TudhoNcTdF4hKlRJby0gjTyqXNVSw'),
-                              fit: BoxFit.cover,
+                          ),
+                          child: Center(
+                            child: Text(
+                              court.isIndoor ? 'INDOOR' : 'OUTDOOR',
+                              style: AppTypography.labelMedium
+                                  .copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                         ),
@@ -115,7 +145,7 @@ class _DetailPageState extends State<DetailPage> {
                           ),
                           child: Center(
                             child: Text(
-                              '+12 Photos',
+                              '${court.capacity} PAX',
                               style: AppTypography.labelSmall.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -130,24 +160,24 @@ class _DetailPageState extends State<DetailPage> {
               ),
             ),
             const SizedBox(height: 24),
-
-            // Bento Layout Details
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Badges
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.secondaryContainer,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          court.tags.isNotEmpty ? court.tags.first.toUpperCase() : 'PREMIUM',
+                          court.tags.isNotEmpty
+                              ? court.tags.first.toUpperCase()
+                              : 'PREMIUM',
                           style: AppTypography.labelSmall.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.onSecondaryContainer,
@@ -157,10 +187,11 @@ class _DetailPageState extends State<DetailPage> {
                       const SizedBox(width: 12),
                       Row(
                         children: [
-                          const Icon(Icons.star, color: AppColors.primary, size: 16),
+                          const Icon(Icons.star,
+                              color: AppColors.primary, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${court.rating} (${court.reviewsCount} reviews)',
+                            '${court.rating.toStringAsFixed(1)} (${court.reviewsCount} reviews)',
                             style: AppTypography.bodySmall.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.onSurface,
@@ -171,8 +202,6 @@ class _DetailPageState extends State<DetailPage> {
                     ],
                   ),
                   const SizedBox(height: 12),
-
-                  // Court Title
                   Text(
                     court.name,
                     style: AppTypography.headlineMedium.copyWith(
@@ -181,32 +210,20 @@ class _DetailPageState extends State<DetailPage> {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  
-                  // Location details
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, color: AppColors.onSurfaceVariant, size: 16),
+                      const Icon(Icons.location_on_outlined,
+                          color: AppColors.onSurfaceVariant, size: 16),
                       const SizedBox(width: 4),
-                      Text(
-                        court.locationName,
-                        style: AppTypography.bodyMedium,
+                      Expanded(
+                        child: Text(
+                          court.location,
+                          style: AppTypography.bodyMedium,
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
-
-                  // Facilities Bento Box
-                  GridWidget(
-                    children: [
-                      _buildFacilityItem(Icons.groups_outlined, '14 PLAYERS'),
-                      _buildFacilityItem(Icons.wb_sunny_outlined, court.tags.contains('Indoor') ? 'INDOOR' : 'OUTDOOR'),
-                      _buildFacilityItem(Icons.shower_outlined, 'SHOWERS'),
-                      _buildFacilityItem(Icons.lightbulb_outline, 'NIGHT LIGHTS'),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Description
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -229,35 +246,13 @@ class _DetailPageState extends State<DetailPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          court.description,
+                          court.description ?? 'No description available.',
                           style: AppTypography.bodyMedium.copyWith(height: 1.5),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Location Map
-                  Text(
-                    'Location Details',
-                    style: AppTypography.titleMedium,
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    height: 150,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      image: const DecorationImage(
-                        image: NetworkImage(
-                            'https://lh3.googleusercontent.com/aida-public/AB6AXuBIpNYYccO1gwsdMkFvg-b5MWJK6OXEIpxKl-vckOYNMEJsjwSg-TbxvhQ4I6YdE07cCUyJk4u5Movf9CSv8KaLwlI6D34EAr-k5oJmnskKDt8EYk2_b1rucWXMFAGzM-tVSuNagpOvBGQ31rMKNfFsocMZFagGb9okEuWhEbpHaq9frlpt63N1gTm7n9NYm347NalnTK6JVlhnsLtEsOf4GpiPwZiG1JdPIlhPbK4zlvpjGBNl2S28llzbR2nVrZDyNK4hBzwk5w'),
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  // Booking Panel
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -268,7 +263,6 @@ class _DetailPageState extends State<DetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Pricing & Discount Header
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -283,11 +277,13 @@ class _DetailPageState extends State<DetailPage> {
                                 ),
                                 Row(
                                   textBaseline: TextBaseline.alphabetic,
-                                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.baseline,
                                   children: [
                                     Text(
                                       '\$${court.pricePerHour.toInt()}',
-                                      style: AppTypography.displaySmall.copyWith(
+                                      style:
+                                          AppTypography.displaySmall.copyWith(
                                         color: AppColors.primary,
                                         fontWeight: FontWeight.w900,
                                       ),
@@ -301,13 +297,14 @@ class _DetailPageState extends State<DetailPage> {
                               ],
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
                               decoration: BoxDecoration(
                                 color: AppColors.tertiaryContainer,
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Text(
-                                '20% OFF TODAY',
+                                '10% OFF TODAY',
                                 style: AppTypography.labelSmall.copyWith(
                                   color: AppColors.onTertiaryContainer,
                                   fontWeight: FontWeight.bold,
@@ -317,26 +314,18 @@ class _DetailPageState extends State<DetailPage> {
                           ],
                         ),
                         const SizedBox(height: 20),
-
-                        // Interactive Calendar
-                        Text(
-                          'Select Date',
-                          style: AppTypography.titleMedium,
-                        ),
+                        Text('Select Date', style: AppTypography.titleMedium),
                         const SizedBox(height: 10),
-                        _buildCalendarSelector(provider),
+                        _buildCalendarSelector(courtVM),
                         const SizedBox(height: 24),
-
-                        // Time Slots Availability Grid
-                        Text(
-                          'Available Slots',
-                          style: AppTypography.titleMedium,
-                        ),
+                        Text('Available Slots',
+                            style: AppTypography.titleMedium),
                         const SizedBox(height: 10),
                         GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
                             crossAxisCount: 3,
                             crossAxisSpacing: 10,
                             mainAxisSpacing: 10,
@@ -345,39 +334,37 @@ class _DetailPageState extends State<DetailPage> {
                           itemCount: _slots.length,
                           itemBuilder: (context, index) {
                             final slot = _slots[index];
-                            final isBooked = provider.isSlotBooked(provider.selectedDate, slot);
-                            final isSelected = provider.selectedTimeSlot == slot;
-
-                            return _buildTimeSlotChip(provider, slot, isBooked, isSelected);
+                            final isBooked = bookingVM.isSlotBooked(slot);
+                            final isSelected =
+                                courtVM.selectedTimeSlot == slot;
+                            return _buildTimeSlotChip(
+                                courtVM, slot, isBooked, isSelected);
                           },
                         ),
                         const SizedBox(height: 28),
-
-                        // SECURE MY SLOT button
                         PillButton(
                           text: 'SECURE MY SLOT',
                           width: double.infinity,
                           icon: const Icon(Icons.flash_on, color: Colors.white),
                           onPressed: () {
-                            if (provider.selectedTimeSlot == null) {
+                            if (courtVM.selectedTimeSlot == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Please select an available time slot first'),
+                                  content: Text(
+                                      'Please select an available time slot first'),
                                   backgroundColor: AppColors.tertiary,
                                 ),
                               );
                               return;
                             }
-                            Navigator.pushNamed(context, '/court_confirmation');
+                            Navigator.pushNamed(
+                                context, '/court_confirmation');
                           },
                         ),
                       ],
                     ),
                   ),
-
                   const SizedBox(height: 24),
-
-                  // Host Card Info
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -386,9 +373,10 @@ class _DetailPageState extends State<DetailPage> {
                     ),
                     child: Row(
                       children: [
-                        CircleAvatar(
+                        const CircleAvatar(
                           radius: 24,
-                          backgroundImage: NetworkImage(court.ownerImageUrl),
+                          backgroundColor: AppColors.primary,
+                          child: Icon(Icons.person, color: Colors.white),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -419,29 +407,8 @@ class _DetailPageState extends State<DetailPage> {
     );
   }
 
-  Widget _buildFacilityItem(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: AppColors.primary, size: 24),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: AppTypography.labelSmall.copyWith(fontSize: 9),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTimeSlotChip(AppProvider provider, String slot, bool isBooked, bool isSelected) {
+  Widget _buildTimeSlotChip(
+      CourtViewModel courtVM, String slot, bool isBooked, bool isSelected) {
     Color chipBgColor;
     Color chipTextColor;
     BorderSide chipBorder = BorderSide.none;
@@ -454,11 +421,11 @@ class _DetailPageState extends State<DetailPage> {
       chipBgColor = AppColors.primary;
       chipTextColor = AppColors.onPrimary;
       chipBorder = const BorderSide(color: AppColors.primary, width: 2);
-      onTap = () => provider.selectTimeSlot(slot);
+      onTap = () => courtVM.selectTimeSlot(slot);
     } else {
       chipBgColor = AppColors.secondaryContainer;
       chipTextColor = AppColors.onSecondaryContainer;
-      onTap = () => provider.selectTimeSlot(slot);
+      onTap = () => courtVM.selectTimeSlot(slot);
     }
 
     return GestureDetector(
@@ -473,7 +440,7 @@ class _DetailPageState extends State<DetailPage> {
           ),
           alignment: Alignment.center,
           child: Text(
-            slot,
+            _formatSlot(slot),
             style: AppTypography.labelMedium.copyWith(
               color: chipTextColor,
               decoration: isBooked ? TextDecoration.lineThrough : null,
@@ -485,8 +452,7 @@ class _DetailPageState extends State<DetailPage> {
     );
   }
 
-  Widget _buildCalendarSelector(AppProvider provider) {
-    // Custom calendar mockup displaying a simple row of dates (e.g., next 7 days)
+  Widget _buildCalendarSelector(CourtViewModel courtVM) {
     final now = DateTime.now();
     return SizedBox(
       height: 70,
@@ -494,23 +460,28 @@ class _DetailPageState extends State<DetailPage> {
         scrollDirection: Axis.horizontal,
         itemCount: 14,
         itemBuilder: (context, index) {
-          final date = now.add(Duration(days: index));
-          final isSelected = date.year == provider.selectedDate.year &&
-              date.month == provider.selectedDate.month &&
-              date.day == provider.selectedDate.day;
+          final date = DateTime(now.year, now.month, now.day)
+              .add(Duration(days: index));
+          final isSelected = date.year == courtVM.selectedDate.year &&
+              date.month == courtVM.selectedDate.month &&
+              date.day == courtVM.selectedDate.day;
 
-          // Day name and number
           final List<String> weekdays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
           final dayName = weekdays[date.weekday - 1];
 
           return Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: GestureDetector(
-              onTap: () => provider.selectDate(date),
+              onTap: () {
+                courtVM.selectDate(date);
+                _refreshSlots();
+              },
               child: Container(
                 width: 50,
                 decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : AppColors.surfaceContainerLow,
+                  color: isSelected
+                      ? AppColors.primary
+                      : AppColors.surfaceContainerLow,
                   borderRadius: BorderRadius.circular(12),
                   border: isSelected
                       ? Border.all(color: AppColors.primary, width: 2)
@@ -522,7 +493,9 @@ class _DetailPageState extends State<DetailPage> {
                     Text(
                       dayName,
                       style: AppTypography.labelSmall.copyWith(
-                        color: isSelected ? Colors.white70 : AppColors.onSurfaceVariant,
+                        color: isSelected
+                            ? Colors.white70
+                            : AppColors.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -540,25 +513,6 @@ class _DetailPageState extends State<DetailPage> {
           );
         },
       ),
-    );
-  }
-}
-
-class GridWidget extends StatelessWidget {
-  final List<Widget> children;
-
-  const GridWidget({super.key, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
-      crossAxisSpacing: 10,
-      mainAxisSpacing: 10,
-      childAspectRatio: 0.95,
-      children: children,
     );
   }
 }
