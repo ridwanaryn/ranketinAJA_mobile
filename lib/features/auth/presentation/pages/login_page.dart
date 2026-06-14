@@ -435,7 +435,7 @@ class _LoginPageState extends State<LoginPage> {
                                             Navigator.pushNamed(context, '/register');
                                           },
                                           child: Text(
-                                            'Request Access',
+                                            'Sign in',
                                             style: AppTypography.bodyMedium.copyWith(
                                               color: AppColors.primary,
                                               fontWeight: FontWeight.bold,

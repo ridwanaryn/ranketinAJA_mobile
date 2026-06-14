@@ -42,4 +42,23 @@ class AuthRemoteDataSource {
     }).select().single();
     return inserted;
   }
+  Future<Map<String, dynamic>> updateUser({
+    required int userId,
+    required String newName,
+  }) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    
+    // Melakukan update pada tabel 'users'
+    final updated = await _client
+        .from('users')
+        .update({
+          'name': newName,
+          'updated_at': now,
+        })
+        .eq('id', userId)
+        .select()
+        .single();
+        
+    return updated;
+  }
 }

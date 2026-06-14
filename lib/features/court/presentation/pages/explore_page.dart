@@ -8,6 +8,7 @@ import '../../data/models/court_model.dart';
 import '../viewmodels/booking_viewmodel.dart';
 import '../viewmodels/court_viewmodel.dart';
 
+
 class ExplorePage extends StatefulWidget {
   const ExplorePage({super.key});
 
@@ -90,7 +91,7 @@ class _ExplorePageState extends State<ExplorePage> {
                         icon: const Icon(Icons.account_circle_outlined,
                             color: AppColors.primary),
                         onPressed: () {
-                          _showProfileDialog(context, authVM);
+                          Navigator.pushNamed(context, '/profile');
                         },
                       ),
                     ],
@@ -253,7 +254,7 @@ class _ExplorePageState extends State<ExplorePage> {
           children: [
             _buildNavItem(Icons.search, 'Explore', true),
             _buildNavItem(Icons.sports_soccer, 'Bookings', false, onTap: () {
-              _showBookingsDialog(context);
+              Navigator.pushNamed(context, '/dashboard');
             }),
             if (authVM.currentUser?.role == 'owner')
               _buildNavItem(Icons.dashboard_outlined, 'Dashboard', false,
@@ -261,7 +262,7 @@ class _ExplorePageState extends State<ExplorePage> {
                 Navigator.pushReplacementNamed(context, '/owner_dashboard');
               }),
             _buildNavItem(Icons.person_outline, 'Profile', false, onTap: () {
-              _showProfileDialog(context, authVM);
+              Navigator.pushNamed(context, '/profile');
             }),
           ],
         ),

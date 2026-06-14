@@ -30,7 +30,7 @@ class SessionService {
       'role': prefs.getString(_kUserRole) ?? 'player',
     };
   }
-
+  
   Future<void> clearSession() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kUserId);

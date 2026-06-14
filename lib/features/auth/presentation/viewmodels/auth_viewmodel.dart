@@ -108,4 +108,42 @@ class AuthViewModel extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+  Future<void> updateProfile({required String name}) async {
+    if (_currentUser == null) return;
+
+    // Set status loading jika Anda menggunakan state management status
+    _status = AuthStatus.loading;
+    notifyListeners();
+
+    try {
+      // 1. Panggil repository untuk update data ke database
+      final result = await _repository.updateName(
+        userId: _currentUser!.id,
+        newName: name,
+      );
+
+      if (result.isSuccess) {
+        // 2. Update state lokal jika database berhasil diubah
+        _currentUser = UserModel(
+          id: _currentUser!.id,
+          name: name,
+          email: _currentUser!.email,
+          phone: _currentUser!.phone,
+          role: _currentUser!.role,
+        );
+        _status = AuthStatus.authenticated;
+        notifyListeners();
+      } else {
+        _status = AuthStatus.error;
+        _errorMessage = result.error;
+        notifyListeners();
+        throw Exception(result.error);
+      }
+    } catch (e) {
+      _status = AuthStatus.error;
+      _errorMessage = e.toString();
+      notifyListeners();
+      throw Exception('Failed to update profile: $e');
+    }
+  }
 }

@@ -56,4 +56,19 @@ class AuthRepository {
       return AuthResult(error: 'Gagal mendaftar: $e');
     }
   }
+  Future<AuthResult> updateName({
+    required int userId,
+    required String newName,
+  }) async {
+    try {
+      // PERHATIAN: Anda juga harus membuat fungsi updateUser di AuthRemoteDataSource
+      final row = await _remote.updateUser(
+        userId: userId,
+        newName: newName,
+      );
+      return AuthResult(user: UserModel.fromMap(row));
+    } catch (e) {
+      return AuthResult(error: 'Gagal memperbarui profil: $e');
+    }
+  }
 }

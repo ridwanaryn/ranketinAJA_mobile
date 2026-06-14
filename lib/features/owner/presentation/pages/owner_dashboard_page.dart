@@ -355,10 +355,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
             }),
             _buildNavItem(Icons.dashboard, 'Dashboard', true),
             _buildNavItem(Icons.person_outline, 'Profile', false, onTap: () async {
-              await authVM.logout();
-              if (!context.mounted) return;
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/login', (route) => false);
+              Navigator.pushNamed(context, '/profile');
             }),
           ],
         ),
