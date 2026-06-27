@@ -14,12 +14,6 @@ class OwnerDashboardPage extends StatefulWidget {
 }
 
 class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
-  final _fieldNameController = TextEditingController();
-  final _fieldPriceController = TextEditingController();
-  final _fieldLocationController = TextEditingController();
-  final _fieldDescController = TextEditingController();
-  String _selectedSport = 'Padel';
-  bool _isIndoor = true;
 
   @override
   void initState() {
@@ -34,129 +28,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
 
   @override
   void dispose() {
-    _fieldNameController.dispose();
-    _fieldPriceController.dispose();
-    _fieldLocationController.dispose();
-    _fieldDescController.dispose();
     super.dispose();
-  }
-
-  void _showAddFieldDialog(BuildContext context) {
-    final ownerVM = context.read<OwnerViewModel>();
-    final user = context.read<AuthViewModel>().currentUser;
-    if (user == null) return;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (dialogContext, setStateDialog) {
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            title: Text('Add New Field', style: AppTypography.titleLarge),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: _fieldNameController,
-                    decoration: const InputDecoration(
-                        labelText: 'Field/Court Name',
-                        hintText: 'e.g. Apex Court B'),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: _selectedSport,
-                    items: ['Padel', 'Tennis', 'Badminton', 'Football']
-                        .map((s) =>
-                            DropdownMenuItem(value: s, child: Text(s)))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setStateDialog(() => _selectedSport = val);
-                      }
-                    },
-                    decoration: const InputDecoration(labelText: 'Sport Type'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _fieldPriceController,
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                    decoration: const InputDecoration(
-                        labelText: 'Price Per Hour (\$)',
-                        hintText: 'e.g. 50.00'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _fieldLocationController,
-                    decoration: const InputDecoration(
-                        labelText: 'Location Name',
-                        hintText: 'e.g. building 4, Madrid'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _fieldDescController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                        labelText: 'Description',
-                        hintText:
-                            'Add court features and specifications...'),
-                  ),
-                  const SizedBox(height: 12),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Indoor Court'),
-                    value: _isIndoor,
-                    onChanged: (val) =>
-                        setStateDialog(() => _isIndoor = val),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_fieldNameController.text.isEmpty ||
-                      _fieldPriceController.text.isEmpty) return;
-                  final ok = await ownerVM.addCourt(
-                    ownerId: user.id,
-                    name: _fieldNameController.text.trim(),
-                    sportType: _selectedSport,
-                    price:
-                        double.tryParse(_fieldPriceController.text) ?? 40.0,
-                    location: _fieldLocationController.text.trim(),
-                    description: _fieldDescController.text.trim(),
-                    features: ['Newly Added', _isIndoor ? 'Indoor' : 'Outdoor'],
-                    isIndoor: _isIndoor,
-                  );
-                  if (!context.mounted) return;
-                  Navigator.pop(dialogContext);
-                  _fieldNameController.clear();
-                  _fieldPriceController.clear();
-                  _fieldLocationController.clear();
-                  _fieldDescController.clear();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(ok
-                          ? 'Field successfully added!'
-                          : ownerVM.error ?? 'Gagal menambah field'),
-                      backgroundColor: ok
-                          ? AppColors.secondary
-                          : AppColors.error,
-                    ),
-                  );
-                },
-                child: const Text('Add Field'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
   }
 
   @override
@@ -280,7 +152,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                             text: 'Add New',
                             icon: const Icon(Icons.add_circle_outline,
                                 color: Colors.white, size: 18),
-                            onPressed: () => _showAddFieldDialog(context),
+                            onPressed: () => Navigator.pushNamed(context, '/owner/add_court'),
                           ),
                         ],
                       ),

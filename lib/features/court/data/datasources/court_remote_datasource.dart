@@ -59,6 +59,7 @@ class CourtRemoteDataSource {
     required String description,
     required String location,
     String? imageUrl,
+    String status = 'active',
   }) async {
     final now = DateTime.now().toUtc().toIso8601String();
     final inserted = await _client.from('fields').insert({
@@ -72,7 +73,7 @@ class CourtRemoteDataSource {
       'description': description,
       'location': location,
       'image_url': imageUrl,
-      'status': 'active',
+      'status': status,
       'created_at': now,
       'updated_at': now,
     }).select().single();

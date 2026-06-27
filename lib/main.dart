@@ -12,6 +12,7 @@ import 'features/court/presentation/pages/explore_page.dart';
 import 'features/court/presentation/viewmodels/booking_viewmodel.dart';
 import 'features/court/presentation/viewmodels/court_viewmodel.dart';
 import 'features/owner/presentation/pages/owner_dashboard_page.dart';
+import 'features/owner/presentation/pages/add_court_page.dart';
 import 'features/owner/presentation/viewmodels/owner_viewmodel.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         '/court_detail': (context) => const DetailPage(),
         '/court_confirmation': (context) => const ConfirmationPage(),
         '/owner_dashboard': (context) => const OwnerDashboardPage(),
+        '/owner/add_court': (context) => const AddCourtPage(),
         '/dashboard': (context) => const DashboardPage(),
         '/profile': (context) => const ProfilePage(),
         '/account_settings': (context) => const AccountSettingsPage(),

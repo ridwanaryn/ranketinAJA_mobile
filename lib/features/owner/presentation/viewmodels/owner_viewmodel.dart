@@ -70,6 +70,9 @@ class OwnerViewModel extends ChangeNotifier {
     required String description,
     required List<String> features,
     required bool isIndoor,
+    int capacity = 4,
+    String? imageUrl,
+    String status = 'active',
   }) async {
     try {
       final created = await _courtRepository.createCourt(
@@ -81,6 +84,9 @@ class OwnerViewModel extends ChangeNotifier {
         description: description,
         features: features,
         isIndoor: isIndoor,
+        capacity: capacity,
+        imageUrl: imageUrl,
+        status: status,
       );
       _ownedCourts.add(created);
       notifyListeners();

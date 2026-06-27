@@ -27,6 +27,7 @@ class CourtRepository {
     required bool isIndoor,
     int capacity = 4,
     String? imageUrl,
+    String status = 'active',
   }) async {
     final row = await _remote.createCourt(
       ownerId: ownerId,
@@ -39,6 +40,7 @@ class CourtRepository {
       description: description,
       location: location,
       imageUrl: imageUrl,
+      status: status,
     );
     return CourtModel.fromMap(row);
   }
