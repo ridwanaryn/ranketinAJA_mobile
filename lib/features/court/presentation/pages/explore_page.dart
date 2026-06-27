@@ -5,7 +5,6 @@ import '../../../../core/constants/typography.dart';
 import '../../../../core/widgets/kinetic_skew.dart';
 import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
 import '../../data/models/court_model.dart';
-import '../viewmodels/booking_viewmodel.dart';
 import '../viewmodels/court_viewmodel.dart';
 
 
@@ -24,14 +23,6 @@ class _ExplorePageState extends State<ExplorePage> {
     super.initState();
     _searchController.addListener(() {
       context.read<CourtViewModel>().setSearchQuery(_searchController.text);
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<CourtViewModel>().loadCourts();
-      final user = context.read<AuthViewModel>().currentUser;
-      if (user != null) {
-        context.read<BookingViewModel>().loadMyBookings(user.id);
-      }
     });
   }
 
@@ -108,7 +99,7 @@ class _ExplorePageState extends State<ExplorePage> {
               onRefresh: () => courtVM.loadCourts(),
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 100.0),
+                padding: const EdgeInsets.only(bottom: 24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -233,40 +224,6 @@ class _ExplorePageState extends State<ExplorePage> {
                 ),
               ),
             ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(36),
-            topRight: Radius.circular(36),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.onSurface.withOpacity(0.08),
-              blurRadius: 30,
-              offset: const Offset(0, -10),
-            )
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(Icons.search, 'Explore', true),
-            _buildNavItem(Icons.sports_soccer, 'Bookings', false, onTap: () {
-              Navigator.pushNamed(context, '/dashboard');
-            }),
-            if (authVM.currentUser?.role == 'owner')
-              _buildNavItem(Icons.dashboard_outlined, 'Dashboard', false,
-                  onTap: () {
-                Navigator.pushReplacementNamed(context, '/owner_dashboard');
-              }),
-            _buildNavItem(Icons.person_outline, 'Profile', false, onTap: () {
-              Navigator.pushNamed(context, '/profile');
-            }),
-          ],
-        ),
-      ),
     );
   }
 
@@ -405,6 +362,34 @@ class _ExplorePageState extends State<ExplorePage> {
                     ),
                   ),
                 ),
+                if (court.allImages.length > 1)
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.55),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.photo_library_outlined,
+                              color: Colors.white, size: 12),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${court.allImages.length}',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
             Padding(
@@ -544,122 +529,4 @@ class _ExplorePageState extends State<ExplorePage> {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isActive,
-      {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: isActive
-            ? BoxDecoration(
-                color: AppColors.secondaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              )
-            : null,
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: isActive
-                  ? AppColors.onSecondaryContainer
-                  : AppColors.onSurface.withOpacity(0.4),
-              size: 22,
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: AppTypography.labelSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSecondaryContainer,
-                ),
-              ),
-            ]
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showProfileDialog(BuildContext context, AuthViewModel authVM) {
-    final user = authVM.currentUser;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Account Profile', style: AppTypography.titleLarge),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Name: ${user?.name ?? '-'}', style: AppTypography.bodyLarge),
-            const SizedBox(height: 8),
-            Text('Email: ${user?.email ?? '-'}',
-                style: AppTypography.bodyMedium),
-            const SizedBox(height: 8),
-            Text('Role: ${(user?.role ?? '-').toUpperCase()}',
-                style: AppTypography.bodyMedium),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () async {
-              await authVM.logout();
-              if (!context.mounted) return;
-              Navigator.pushNamedAndRemoveUntil(
-                  context, '/login', (route) => false);
-            },
-            child: const Text('Logout', style: TextStyle(color: Colors.red)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showBookingsDialog(BuildContext context) {
-    final bookingVM = context.read<BookingViewModel>();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('My Bookings', style: AppTypography.titleLarge),
-        content: bookingVM.bookings.isEmpty
-            ? Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text('No active bookings yet.',
-                    style: AppTypography.bodyMedium),
-              )
-            : SizedBox(
-                width: double.maxFinite,
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: bookingVM.bookings.length,
-                  itemBuilder: (context, index) {
-                    final b = bookingVM.bookings[index];
-                    return ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(b.courtName ?? 'Court #${b.fieldId}',
-                          style:
-                              const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(
-                          '${b.bookingDate.day}/${b.bookingDate.month}/${b.bookingDate.year} • ${b.timeSlot}\nTotal: \$${b.totalPrice.toStringAsFixed(2)}'),
-                      trailing: Text(b.status.toUpperCase(),
-                          style: const TextStyle(
-                              color: AppColors.secondary,
-                              fontWeight: FontWeight.bold)),
-                    );
-                  },
-                ),
-              ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
 }

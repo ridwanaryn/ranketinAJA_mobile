@@ -25,7 +25,9 @@ class DashboardPage extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: bookingVM.bookings.isEmpty
+      body: bookingVM.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : bookingVM.bookings.isEmpty
           ? _buildEmptyState()
           : ListView.builder(
               padding: const EdgeInsets.all(20),

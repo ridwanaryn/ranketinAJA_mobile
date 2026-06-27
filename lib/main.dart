@@ -16,6 +16,7 @@ import 'features/owner/presentation/viewmodels/owner_viewmodel.dart';
 import 'features/dashboard/presentation/pages/dashboard_page.dart';
 import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/account_settings_page.dart';
+import 'core/widgets/player_shell.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/forgot_password': (context) => const ForgotPasswordPage(),
+        '/home': (context) => const PlayerShell(),
         '/explore': (context) => const ExplorePage(),
         '/court_detail': (context) => const DetailPage(),
         '/court_confirmation': (context) => const ConfirmationPage(),

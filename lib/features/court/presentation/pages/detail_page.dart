@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/typography.dart';
-import '../../../../core/widgets/kinetic_skew.dart';
+import '../../../../core/widgets/court_image_carousel.dart';
 import '../../../../core/widgets/pill_button.dart';
 import '../viewmodels/booking_viewmodel.dart';
 import '../viewmodels/court_viewmodel.dart';
@@ -84,19 +84,15 @@ class _DetailPageState extends State<DetailPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Column(
                 children: [
-                  KineticTilt(
-                    angleDegrees: -1.5,
-                    child: Container(
-                      height: 220,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: AppColors.ambientGlow,
-                        image: DecorationImage(
-                          image: NetworkImage(court.displayImageUrl),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: AppColors.ambientGlow,
+                    ),
+                    child: CourtImageCarousel(
+                      images: court.allImages,
+                      height: 240,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   const SizedBox(height: 12),

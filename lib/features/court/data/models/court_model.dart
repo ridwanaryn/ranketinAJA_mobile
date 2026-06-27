@@ -10,6 +10,7 @@ class CourtModel {
   final String? description;
   final String location;
   final String? imageUrl;
+  final List<String> imageUrls;
   final String status;
 
   final double rating;
@@ -29,6 +30,7 @@ class CourtModel {
     this.description,
     required this.location,
     this.imageUrl,
+    this.imageUrls = const [],
     required this.status,
     this.rating = 4.8,
     this.reviewsCount = 0,
@@ -46,8 +48,19 @@ class CourtModel {
     return [isIndoor ? 'Indoor' : 'Outdoor'];
   }
 
-  String get displayImageUrl =>
-      imageUrl ?? 'https://placehold.co/600x400/png?text=Court';
+  List<String> get allImages {
+    final all = <String>[];
+    if (imageUrls.isNotEmpty) all.addAll(imageUrls);
+    if (imageUrl != null && imageUrl!.isNotEmpty && !all.contains(imageUrl)) {
+      all.insert(0, imageUrl!);
+    }
+    return all;
+  }
+
+  String get displayImageUrl {
+    if (imageUrls.isNotEmpty) return imageUrls.first;
+    return imageUrl ?? 'https://placehold.co/600x400/png?text=Court';
+  }
 
   String get distance => '0.0 miles away';
   String get locationName => location;
@@ -60,6 +73,18 @@ class CourtModel {
     } else {
       features = [];
     }
+
+    final imageUrlsRaw = map['image_urls'];
+    final List<String> imageUrls;
+    if (imageUrlsRaw is List) {
+      imageUrls = imageUrlsRaw
+          .map((e) => e.toString())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    } else {
+      imageUrls = [];
+    }
+
     return CourtModel(
       id: map['id'] as int,
       ownerId: map['owner_id'] as int,
@@ -72,6 +97,7 @@ class CourtModel {
       description: map['description'] as String?,
       location: (map['location'] ?? '') as String,
       imageUrl: map['image_url'] as String?,
+      imageUrls: imageUrls,
       status: (map['status'] ?? 'active') as String,
       rating: _parseDouble(map['avg_rating'], fallback: 4.8),
       reviewsCount: (map['review_count'] ?? 0) as int,

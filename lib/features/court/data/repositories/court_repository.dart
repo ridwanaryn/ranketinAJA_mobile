@@ -27,6 +27,7 @@ class CourtRepository {
     required bool isIndoor,
     int capacity = 4,
     String? imageUrl,
+    List<String> imageUrls = const [],
   }) async {
     final row = await _remote.createCourt(
       ownerId: ownerId,
@@ -39,7 +40,39 @@ class CourtRepository {
       description: description,
       location: location,
       imageUrl: imageUrl,
+      imageUrls: imageUrls,
     );
     return CourtModel.fromMap(row);
+  }
+
+  Future<CourtModel> updateCourt({
+    required int id,
+    required String name,
+    required String sportType,
+    required double pricePerHour,
+    required String location,
+    required String description,
+    required List<String> features,
+    required bool isIndoor,
+    String? imageUrl,
+    List<String> imageUrls = const [],
+  }) async {
+    final row = await _remote.updateCourt(
+      id: id,
+      name: name,
+      sportType: sportType,
+      pricePerHour: pricePerHour,
+      isIndoor: isIndoor,
+      features: features,
+      description: description,
+      location: location,
+      imageUrl: imageUrl,
+      imageUrls: imageUrls,
+    );
+    return CourtModel.fromMap(row);
+  }
+
+  Future<void> deleteCourt(int id) async {
+    await _remote.deleteCourt(id);
   }
 }

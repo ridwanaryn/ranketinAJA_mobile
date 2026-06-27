@@ -59,6 +59,7 @@ class CourtRemoteDataSource {
     required String description,
     required String location,
     String? imageUrl,
+    List<String> imageUrls = const [],
   }) async {
     final now = DateTime.now().toUtc().toIso8601String();
     final inserted = await _client.from('fields').insert({
@@ -72,10 +73,43 @@ class CourtRemoteDataSource {
       'description': description,
       'location': location,
       'image_url': imageUrl,
+      'image_urls': imageUrls,
       'status': 'active',
       'created_at': now,
       'updated_at': now,
     }).select().single();
     return Map<String, dynamic>.from(inserted);
+  }
+
+  Future<Map<String, dynamic>> updateCourt({
+    required int id,
+    required String name,
+    required String sportType,
+    required double pricePerHour,
+    required bool isIndoor,
+    required List<String> features,
+    required String description,
+    required String location,
+    String? imageUrl,
+    List<String> imageUrls = const [],
+  }) async {
+    final now = DateTime.now().toUtc().toIso8601String();
+    final updated = await _client.from('fields').update({
+      'name': name,
+      'sport_type': sportType.toLowerCase(),
+      'price_per_hour': pricePerHour,
+      'is_indoor': isIndoor,
+      'features': features,
+      'description': description,
+      'location': location,
+      'image_url': imageUrl,
+      'image_urls': imageUrls,
+      'updated_at': now,
+    }).eq('id', id).select().single();
+    return Map<String, dynamic>.from(updated);
+  }
+
+  Future<void> deleteCourt(int id) async {
+    await _client.from('fields').delete().eq('id', id);
   }
 }

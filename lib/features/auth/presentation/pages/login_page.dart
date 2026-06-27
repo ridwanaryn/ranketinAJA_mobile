@@ -50,7 +50,7 @@ class _LoginPageState extends State<LoginPage> {
     if (role == 'owner') {
       Navigator.pushReplacementNamed(context, '/owner_dashboard');
     } else {
-      Navigator.pushReplacementNamed(context, '/explore');
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 
