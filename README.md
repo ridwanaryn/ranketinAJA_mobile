@@ -112,9 +112,3 @@ lib/
     owner/
     profile/
 ```
-
-## Notes for Contributors
-
-- Keep feature logic separated by layer (`data`, `presentation`, and repositories/viewmodels where appropriate).
-- Use Provider for state management and keep UI logic inside feature pages.
-- If you change the Supabase schema, update the related data source and repository implementations accordingly.
