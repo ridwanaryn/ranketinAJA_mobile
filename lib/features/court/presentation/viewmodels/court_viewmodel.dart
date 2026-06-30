@@ -1,12 +1,18 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/court_model.dart';
+import '../../data/models/review_model.dart';
 import '../../data/repositories/court_repository.dart';
+import '../../data/repositories/review_repository.dart';
 
 class CourtViewModel extends ChangeNotifier {
   final CourtRepository _repository;
+  final ReviewRepository _reviewRepository;
 
-  CourtViewModel({CourtRepository? repository})
-      : _repository = repository ?? CourtRepository();
+  CourtViewModel({
+    CourtRepository? repository,
+    ReviewRepository? reviewRepository,
+  })  : _repository = repository ?? CourtRepository(),
+        _reviewRepository = reviewRepository ?? ReviewRepository();
 
   List<CourtModel> _courts = [];
   bool _isLoading = false;
@@ -19,6 +25,9 @@ class CourtViewModel extends ChangeNotifier {
   DateTime _selectedDate = DateTime.now().add(const Duration(days: 1));
   String? _selectedTimeSlot;
 
+  List<ReviewModel> _reviewsForSelected = [];
+  bool _isLoadingReviews = false;
+
   List<CourtModel> get courts => List.unmodifiable(_courts);
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -27,6 +36,16 @@ class CourtViewModel extends ChangeNotifier {
   CourtModel? get selectedCourt => _selectedCourt;
   DateTime get selectedDate => _selectedDate;
   String? get selectedTimeSlot => _selectedTimeSlot;
+
+  List<ReviewModel> get reviewsForSelected =>
+      List.unmodifiable(_reviewsForSelected);
+  bool get isLoadingReviews => _isLoadingReviews;
+
+  double get selectedAvgRating {
+    if (_reviewsForSelected.isEmpty) return 0.0;
+    final sum = _reviewsForSelected.fold<double>(0, (s, r) => s + r.rating);
+    return sum / _reviewsForSelected.length;
+  }
 
   List<CourtModel> get filteredCourts {
     return _courts.where((c) {
@@ -54,6 +73,26 @@ class CourtViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> loadReviewsForSelected() async {
+    final court = _selectedCourt;
+    if (court == null) {
+      _reviewsForSelected = [];
+      notifyListeners();
+      return;
+    }
+    _isLoadingReviews = true;
+    notifyListeners();
+    try {
+      _reviewsForSelected =
+          await _reviewRepository.getReviewsForField(court.id);
+    } catch (_) {
+      _reviewsForSelected = [];
+    } finally {
+      _isLoadingReviews = false;
+      notifyListeners();
+    }
+  }
+
   void setSportTab(String tab) {
     _selectedSportTab = tab;
     notifyListeners();
@@ -67,6 +106,7 @@ class CourtViewModel extends ChangeNotifier {
   void selectCourt(CourtModel court) {
     _selectedCourt = court;
     _selectedTimeSlot = null;
+    _reviewsForSelected = [];
     notifyListeners();
   }
 
@@ -84,6 +124,7 @@ class CourtViewModel extends ChangeNotifier {
   void clearSelection() {
     _selectedCourt = null;
     _selectedTimeSlot = null;
+    _reviewsForSelected = [];
   }
 
   double getSubtotal() {
@@ -93,8 +134,5 @@ class CourtViewModel extends ChangeNotifier {
 
   double getServiceFee() => 5.50;
 
-  double getDiscount() => getSubtotal() * 0.10;
-
-  double calculateTotalDue() =>
-      getSubtotal() + getServiceFee() - getDiscount();
+  double calculateTotalDue() => getSubtotal() + getServiceFee();
 }

@@ -4,8 +4,13 @@ import '../../../../core/constants/colors.dart';
 import '../../../../core/constants/typography.dart';
 import '../../../../core/widgets/court_image_carousel.dart';
 import '../../../../core/widgets/pill_button.dart';
+import '../../../../core/widgets/star_rating.dart';
+import '../../../auth/presentation/viewmodels/auth_viewmodel.dart';
+import '../../data/models/booking_model.dart';
+import '../../data/models/review_model.dart';
 import '../viewmodels/booking_viewmodel.dart';
 import '../viewmodels/court_viewmodel.dart';
+import '../widgets/rating_dialog.dart';
 
 class DetailPage extends StatefulWidget {
   const DetailPage({super.key});
@@ -27,7 +32,10 @@ class _DetailPageState extends State<DetailPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _refreshSlots());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshSlots();
+      context.read<CourtViewModel>().loadReviewsForSelected();
+    });
   }
 
   void _refreshSlots() {
@@ -187,7 +195,9 @@ class _DetailPageState extends State<DetailPage> {
                               color: AppColors.primary, size: 16),
                           const SizedBox(width: 4),
                           Text(
-                            '${court.rating.toStringAsFixed(1)} (${court.reviewsCount} reviews)',
+                            court.hasReviews
+                                ? '${court.ratingDisplay} (${court.reviewsCount} reviews)'
+                                : 'No ratings yet',
                             style: AppTypography.bodySmall.copyWith(
                               fontWeight: FontWeight.bold,
                               color: AppColors.onSurface,
@@ -259,53 +269,31 @@ class _DetailPageState extends State<DetailPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                            Text(
+                              'STARTING FROM',
+                              style: AppTypography.labelSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Row(
+                              textBaseline: TextBaseline.alphabetic,
+                              crossAxisAlignment: CrossAxisAlignment.baseline,
                               children: [
                                 Text(
-                                  'STARTING FROM',
-                                  style: AppTypography.labelSmall.copyWith(
-                                    fontWeight: FontWeight.bold,
+                                  '\$${court.pricePerHour.toInt()}',
+                                  style: AppTypography.displaySmall.copyWith(
+                                    color: AppColors.primary,
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                                Row(
-                                  textBaseline: TextBaseline.alphabetic,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.baseline,
-                                  children: [
-                                    Text(
-                                      '\$${court.pricePerHour.toInt()}',
-                                      style:
-                                          AppTypography.displaySmall.copyWith(
-                                        color: AppColors.primary,
-                                        fontWeight: FontWeight.w900,
-                                      ),
-                                    ),
-                                    Text(
-                                      ' / hour',
-                                      style: AppTypography.bodyMedium,
-                                    ),
-                                  ],
+                                Text(
+                                  ' / hour',
+                                  style: AppTypography.bodyMedium,
                                 ),
                               ],
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: AppColors.tertiaryContainer,
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                '10% OFF TODAY',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: AppColors.onTertiaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
                             ),
                           ],
                         ),
@@ -394,6 +382,8 @@ class _DetailPageState extends State<DetailPage> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 24),
+                  _buildReviewsSection(courtVM, bookingVM),
                 ],
               ),
             ),
@@ -508,6 +498,269 @@ class _DetailPageState extends State<DetailPage> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildReviewsSection(
+      CourtViewModel courtVM, BookingViewModel bookingVM) {
+    final reviews = courtVM.reviewsForSelected;
+    final court = courtVM.selectedCourt!;
+    final user = context.watch<AuthViewModel>().currentUser;
+
+    BookingModel? userBookingForThisCourt;
+    if (user != null) {
+      for (final b in bookingVM.bookings) {
+        if (b.fieldId == court.id) {
+          userBookingForThisCourt = b;
+          break;
+        }
+      }
+    }
+    final existingReview = userBookingForThisCourt == null
+        ? null
+        : bookingVM.reviewForBooking(userBookingForThisCourt.id);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: AppColors.ambientGlow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.tertiaryContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.reviews_outlined,
+                    color: AppColors.tertiary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Reviews',
+                      style: AppTypography.titleLarge.copyWith(fontSize: 18),
+                    ),
+                    Text(
+                      reviews.isEmpty
+                          ? 'Belum ada review untuk court ini'
+                          : '${reviews.length} review${reviews.length == 1 ? '' : 's'} • avg ${courtVM.selectedAvgRating.toStringAsFixed(1)}',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (reviews.isNotEmpty)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.star,
+                        color: AppColors.tertiary, size: 18),
+                    const SizedBox(width: 2),
+                    Text(
+                      courtVM.selectedAvgRating.toStringAsFixed(1),
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          if (userBookingForThisCourt != null) ...[
+            const SizedBox(height: 14),
+            _buildRateCta(
+                booking: userBookingForThisCourt,
+                existing: existingReview,
+                courtName: court.name),
+          ],
+          if (courtVM.isLoadingReviews && reviews.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (reviews.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.star_border_purple500_outlined,
+                        size: 40, color: AppColors.outline.withOpacity(0.6)),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Jadilah yang pertama beri review',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: AppColors.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            const SizedBox(height: 12),
+            ...reviews.map(_buildReviewTile),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRateCta({
+    required BookingModel booking,
+    required ReviewModel? existing,
+    required String courtName,
+  }) {
+    final hasReview = existing != null;
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            hasReview ? Icons.check_circle : Icons.star_border,
+            color: AppColors.primary,
+            size: 22,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasReview
+                      ? 'Kamu sudah review ${existing.rating.toStringAsFixed(0)}★'
+                      : 'Pernah main di sini? Beri rating!',
+                  style: AppTypography.labelLarge.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  hasReview
+                      ? 'Klik edit untuk mengubah review-mu'
+                      : 'Bagikan pengalamanmu untuk pemain lain',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: AppColors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            icon: Icon(
+              hasReview ? Icons.edit_outlined : Icons.star,
+              size: 14,
+            ),
+            label: Text(
+              hasReview ? 'Edit' : 'Rate',
+              style: AppTypography.labelSmall.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () => showRatingDialog(
+              context,
+              booking: booking,
+              existing: existing,
+              courtName: courtName,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewTile(ReviewModel r) {
+    final initial = (r.userName ?? 'U').substring(0, 1).toUpperCase();
+    final when = r.createdAt;
+    final dateStr = when == null
+        ? ''
+        : '${when.day}/${when.month}/${when.year}';
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 18,
+            backgroundColor: AppColors.primaryContainer,
+            child: Text(
+              initial,
+              style: AppTypography.labelLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                color: AppColors.onPrimaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        r.userName ?? 'User',
+                        style: AppTypography.labelLarge.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    if (dateStr.isNotEmpty)
+                      Text(
+                        dateStr,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 10,
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                StarRatingDisplay(rating: r.rating, size: 14),
+                if (r.review != null && r.review!.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    r.review!,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: AppColors.onSurface,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

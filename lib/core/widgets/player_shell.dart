@@ -47,83 +47,118 @@ class _PlayerShellState extends State<PlayerShell> {
         index: _currentIndex,
         children: _tabs,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(36),
-            topRight: Radius.circular(36),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.onSurface.withOpacity(0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+            border: Border.all(
+              color: AppColors.outline.withOpacity(0.08),
+            ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.onSurface.withOpacity(0.08),
-              blurRadius: 30,
-              offset: const Offset(0, -10),
-            )
-          ],
-        ),
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(Icons.search, 'Explore', 0),
-            _buildNavItem(Icons.sports_soccer, 'Bookings', 1),
-            if (isOwner) _buildOwnerItem(context),
-            _buildNavItem(Icons.person_outline, 'Profile', 2),
-          ],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _NavItem(
+                icon: Icons.explore_outlined,
+                activeIcon: Icons.explore,
+                label: 'Explore',
+                isActive: _currentIndex == 0,
+                onTap: () => setState(() => _currentIndex = 0),
+              ),
+              _NavItem(
+                icon: Icons.event_note_outlined,
+                activeIcon: Icons.event_note,
+                label: 'Bookings',
+                isActive: _currentIndex == 1,
+                onTap: () => setState(() => _currentIndex = 1),
+              ),
+              if (isOwner)
+                _NavItem(
+                  icon: Icons.dashboard_outlined,
+                  activeIcon: Icons.dashboard,
+                  label: 'Owner',
+                  isActive: false,
+                  onTap: () => Navigator.pushReplacementNamed(
+                      context, '/owner_dashboard'),
+                ),
+              _NavItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Profile',
+                isActive: _currentIndex == 2,
+                onTap: () => setState(() => _currentIndex = 2),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    final isActive = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: isActive
-            ? BoxDecoration(
-                color: AppColors.secondaryContainer,
-                borderRadius: BorderRadius.circular(20),
-              )
-            : null,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isActive
-                  ? AppColors.onSecondaryContainer
-                  : AppColors.onSurface.withOpacity(0.4),
-              size: 22,
-            ),
-            if (isActive) ...[
-              const SizedBox(width: 8),
+class _NavItem extends StatelessWidget {
+  final IconData icon;
+  final IconData activeIcon;
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _NavItem({
+    required this.icon,
+    required this.activeIcon,
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isActive ? AppColors.primary : AppColors.onSurfaceVariant;
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          decoration: BoxDecoration(
+            color: isActive
+                ? AppColors.primary.withOpacity(0.08)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(22),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isActive ? activeIcon : icon,
+                size: 24,
+                color: color,
+              ),
+              const SizedBox(height: 4),
               Text(
                 label,
                 style: AppTypography.labelSmall.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.onSecondaryContainer,
+                  fontSize: 11,
+                  fontWeight:
+                      isActive ? FontWeight.w900 : FontWeight.w600,
+                  color: color,
                 ),
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOwnerItem(BuildContext context) {
-    return GestureDetector(
-      onTap: () =>
-          Navigator.pushReplacementNamed(context, '/owner_dashboard'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Icon(
-          Icons.dashboard_outlined,
-          color: AppColors.onSurface.withOpacity(0.4),
-          size: 22,
+          ),
         ),
       ),
     );

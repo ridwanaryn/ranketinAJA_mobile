@@ -8,13 +8,10 @@ import 'features/auth/presentation/pages/register_page.dart';
 import 'features/auth/presentation/viewmodels/auth_viewmodel.dart';
 import 'features/court/presentation/pages/confirmation_page.dart';
 import 'features/court/presentation/pages/detail_page.dart';
-import 'features/court/presentation/pages/explore_page.dart';
 import 'features/court/presentation/viewmodels/booking_viewmodel.dart';
 import 'features/court/presentation/viewmodels/court_viewmodel.dart';
 import 'features/owner/presentation/pages/owner_dashboard_page.dart';
 import 'features/owner/presentation/viewmodels/owner_viewmodel.dart';
-import 'features/dashboard/presentation/pages/dashboard_page.dart';
-import 'features/profile/presentation/pages/profile_page.dart';
 import 'features/profile/presentation/pages/account_settings_page.dart';
 import 'core/widgets/player_shell.dart';
 
@@ -50,12 +47,9 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forgot_password': (context) => const ForgotPasswordPage(),
         '/home': (context) => const PlayerShell(),
-        '/explore': (context) => const ExplorePage(),
         '/court_detail': (context) => const DetailPage(),
         '/court_confirmation': (context) => const ConfirmationPage(),
         '/owner_dashboard': (context) => const OwnerDashboardPage(),
-        '/dashboard': (context) => const DashboardPage(),
-        '/profile': (context) => const ProfilePage(),
         '/account_settings': (context) => const AccountSettingsPage(),
       },
     );

@@ -43,9 +43,26 @@ class CourtRemoteDataSource {
         .select()
         .eq('owner_id', ownerId)
         .order('id');
-    return List<Map<String, dynamic>>.from(
-      fields.map((e) => Map<String, dynamic>.from(e as Map)),
-    );
+
+    final reviews = await _client.from('reviews').select('field_id, rating');
+    final Map<int, List<double>> ratingByField = {};
+    for (final r in reviews) {
+      final fid = r['field_id'] as int;
+      final rating = (r['rating'] as num).toDouble();
+      ratingByField.putIfAbsent(fid, () => []).add(rating);
+    }
+
+    final List<Map<String, dynamic>> results = [];
+    for (final f in fields) {
+      final map = Map<String, dynamic>.from(f as Map);
+      final fid = map['id'] as int;
+      final ratings = ratingByField[fid] ?? [];
+      map['avg_rating'] =
+          ratings.isEmpty ? 0.0 : ratings.reduce((a, b) => a + b) / ratings.length;
+      map['review_count'] = ratings.length;
+      results.add(map);
+    }
+    return results;
   }
 
   Future<Map<String, dynamic>> createCourt({

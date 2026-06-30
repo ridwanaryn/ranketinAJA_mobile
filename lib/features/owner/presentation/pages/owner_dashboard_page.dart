@@ -445,7 +445,7 @@ class _OwnerDashboardPageState extends State<OwnerDashboardPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Last 6 months trend',
+                    'Next 6 months projection',
                     style: AppTypography.bodySmall.copyWith(
                       color: AppColors.onSurfaceVariant,
                     ),

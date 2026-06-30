@@ -32,11 +32,15 @@ class CourtModel {
     this.imageUrl,
     this.imageUrls = const [],
     required this.status,
-    this.rating = 4.8,
+    this.rating = 0.0,
     this.reviewsCount = 0,
     this.ownerName = 'Owner',
     this.ownerImageUrl,
   });
+
+  bool get hasReviews => reviewsCount > 0;
+  String get ratingDisplay =>
+      hasReviews ? rating.toStringAsFixed(1) : 'New';
 
   String get displaySport {
     if (sportType.isEmpty) return sportType;
@@ -99,7 +103,7 @@ class CourtModel {
       imageUrl: map['image_url'] as String?,
       imageUrls: imageUrls,
       status: (map['status'] ?? 'active') as String,
-      rating: _parseDouble(map['avg_rating'], fallback: 4.8),
+      rating: _parseDouble(map['avg_rating'], fallback: 0.0),
       reviewsCount: (map['review_count'] ?? 0) as int,
       ownerName: (map['owner_name'] ?? 'Owner') as String,
       ownerImageUrl: map['owner_image_url'] as String?,

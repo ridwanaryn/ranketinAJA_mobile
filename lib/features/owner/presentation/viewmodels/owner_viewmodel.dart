@@ -54,24 +54,31 @@ class OwnerViewModel extends ChangeNotifier {
     }).toList();
   }
 
-  /// Monthly revenue for the last 6 months (oldest -> newest).
-  /// Each entry: { 'label': 'Jan', 'year': 2026, 'month': 1, 'total': 1234.56 }
+  /// Monthly revenue bucketed from the oldest to the newest booking date
+  /// (always extended to the current month). Falls back to last 6 months
+  /// with zeros when there are no bookings. Each entry:
+  /// { 'label': 'Jan', 'year': 2026, 'month': 1, 'total': 1234.56 }
   List<Map<String, dynamic>> get monthlyRevenue {
-    final now = DateTime.now();
     const monthNames = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
-    final List<Map<String, dynamic>> buckets = [];
-    for (int i = 5; i >= 0; i--) {
-      final m = DateTime(now.year, now.month - i, 1);
-      buckets.add({
+
+    final now = DateTime.now();
+
+    // Next 6 months: current month → current month + 5
+    final List<Map<String, dynamic>> buckets = List.generate(6, (i) {
+      final m = DateTime(now.year, now.month + i, 1);
+      return {
         'label': monthNames[m.month - 1],
         'year': m.year,
         'month': m.month,
         'total': 0.0,
-      });
-    }
+      };
+    });
+
+    if (_ownerBookings.isEmpty) return buckets;
+
     for (final b in _ownerBookings) {
       for (final bucket in buckets) {
         if (b.bookingDate.year == bucket['year'] &&

@@ -75,7 +75,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (_selectedRole == 'owner') {
       Navigator.pushReplacementNamed(context, '/owner_dashboard');
     } else {
-      Navigator.pushReplacementNamed(context, '/explore');
+      Navigator.pushReplacementNamed(context, '/home');
     }
   }
 

@@ -91,7 +91,7 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
               onPressed: () {
                 Navigator.pop(context);
                 Navigator.pushNamedAndRemoveUntil(
-                    context, '/explore', (route) => false);
+                    context, '/home', (route) => false);
               },
             ),
             const SizedBox(height: 8),
@@ -317,27 +317,6 @@ class _ConfirmationPageState extends State<ConfirmationPage> {
                       Text('Service Fee', style: AppTypography.bodyMedium),
                       Text('\$${courtVM.getServiceFee().toStringAsFixed(2)}',
                           style: AppTypography.titleMedium),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Flash Discount (10%)',
-                        style: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.tertiary,
-                          fontWeight: FontWeight.bold,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      Text(
-                        '-\$${courtVM.getDiscount().toStringAsFixed(2)}',
-                        style: AppTypography.titleMedium.copyWith(
-                          color: AppColors.tertiary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 16),

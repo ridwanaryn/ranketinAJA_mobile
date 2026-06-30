@@ -78,13 +78,6 @@ class _ExplorePageState extends State<ExplorePage> {
                                 context, '/owner_dashboard');
                           },
                         ),
-                      IconButton(
-                        icon: const Icon(Icons.account_circle_outlined,
-                            color: AppColors.primary),
-                        onPressed: () {
-                          Navigator.pushNamed(context, '/profile');
-                        },
-                      ),
                     ],
                   ),
                 ],
@@ -352,7 +345,7 @@ class _ExplorePageState extends State<ExplorePage> {
                             color: AppColors.tertiary, size: 14),
                         const SizedBox(width: 2),
                         Text(
-                          court.rating.toStringAsFixed(1),
+                          court.ratingDisplay,
                           style: AppTypography.labelSmall.copyWith(
                             color: AppColors.onSurface,
                             fontWeight: FontWeight.bold,
